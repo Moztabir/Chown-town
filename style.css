@@ -1,0 +1,302 @@
+
+/* Brand styling (matches your previous header look) */
+.brand-title {
+  font-size: 2rem;
+  color: #990f02;
+  font-family: 'Montserrat', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+/* Makes logo circular */
+.brand-logo {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover; 
+  border: 2px solid #990f02;
+}
+
+/* Text beside logo */
+.brand-title {
+  font-size: 1.8rem;
+  color: #990f02;
+  font-family: 'Montserrat', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+/* General Layout */
+body {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}
+
+main {
+  flex: 1;
+}
+
+
+/* Footer Section */
+footer {
+  background-color: #111;
+  padding: 20px 40px;
+  color: white;
+  font-family: 'Montserrat', sans-serif;
+}
+
+/* Top nav buttons */
+footer nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 20px 0;
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+footer nav ul li a {
+  text-decoration: none;
+  color: white;
+  background-color: #222;
+  padding: 10px 20px;
+  border-radius: 25px;
+  border: 1px solid #444;
+  transition: all .3s ease;
+  font-size: 14px;
+  letter-spacing: .5px;
+}
+footer nav ul li a:hover {
+  background-color: #990f02;
+  border-color: #333;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(153,15,2,.4);
+}
+
+/* Bottom section */
+.footer-bottom {
+  border-top: 1px solid #333;
+  padding-top: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.footer-left { color: #ccc; }
+
+.footer-right {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.social-link {
+  color: #aaa;
+  text-decoration: none;
+  transition: color .3s ease;
+}
+.social-link:hover { color:#990f02; }
+
+/* About Us / Team page */
+.contact-page {
+  min-height: 70vh;
+}
+
+.team-section {
+  border-top: 1px solid #eee;
+  padding-top: 20px;
+}
+
+.team-heading {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1.6rem;
+  color: #990f02;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Individual team cards */
+.team-card {
+  background-color: #181818;
+  border-radius: 18px;
+  padding: 20px;
+  text-align: center;
+  color: #f5f5f5;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.team-photo {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #990f02;
+  margin-bottom: 12px;
+}
+
+.team-name {
+  font-size: 1.1rem;
+  margin-bottom: 4px;
+}
+
+.team-role {
+  font-size: 0.9rem;
+  color: #ffdecf;
+  margin-bottom: 8px;
+}
+
+.team-email {
+  font-size: 0.85rem;
+  color: #f90404;
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.team-email:hover {
+  text-decoration: underline;
+}
+
+/* Contact Page Styling */
+.contact-section h1 {
+  font-family: 'Montserrat', sans-serif;
+  color: #990f02;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.contact-box {
+  background: #181818;
+  border-left: 4px solid #990f02;
+  border-radius: 10px;
+  color: #f5f5f5;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.contact-title {
+  font-size: 1.3rem;
+  color: #990f02;
+  font-weight: 600;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+}
+
+.contact-subtext {
+  color: #cccccc;
+  font-size: 0.9rem;
+  margin-bottom: 5px;
+}
+
+.contact-number, .email-address {
+  font-size: 1.2rem;
+  color: #00bfa6;
+  font-weight: 600;
+}
+
+.email-info {
+  background: #222;
+  border: 1px solid #444;
+  border-radius: 8px;
+  color: #e3e3e3;
+}
+
+/* Icons color */
+.contact-box i {
+  color: #990f02;
+  font-size: 1.3rem;
+}
+
+/* --- Sidebar (offcanvas) --- */
+
+.sidebar-offcanvas {
+  width: 280px;
+  background-color: #ffffff;
+  color: #111;
+}
+
+/* Top CT + home icon */
+.sidebar-logo {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 800;
+  font-size: 1.8rem;
+  color: #990f02;
+}
+
+.sidebar-home-icon {
+  text-decoration: none;
+}
+
+.sidebar-home-icon i {
+  font-size: 1.4rem;
+  color: #111;
+}
+
+/* Main sidebar nav links */
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 4px;
+  text-decoration: none;
+  color: #111;
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+
+.sidebar-link i {
+  font-size: 1.2rem;
+}
+
+.sidebar-link:hover {
+  background-color: #f5f5f5;
+}
+
+/* Footer at bottom */
+.sidebar-footer {
+  font-size: 0.85rem;
+}
+
+.sidebar-footer-links a {
+  color: #555;
+  text-decoration: none;
+}
+
+.sidebar-footer-links a:hover {
+  text-decoration: underline;
+}
+
+/* Social icons */
+.sidebar-social-link {
+  color: #111;
+  text-decoration: none;
+  font-size: 1.2rem;
+}
+
+.sidebar-social-link:hover {
+  color: #990f02;
+}
+
+
+/* Scrollable/Zoomable JPG Map */
+#chownMap {
+  width: 100%;
+  height: 75vh;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+}
