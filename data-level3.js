@@ -1,6 +1,6 @@
 window.LEVEL3 = {
   image: {
-    url: "assets/v1.png",
+    url: "assets/V1.png",
     width: 3312,
     height: 2019
   },
@@ -91,4 +91,5 @@ window.LEVEL3 = {
     { id: "WR_2", label: "Male Washroom", type: "washroom", x: 527,y: 684 }
   ]
 };
+
 
