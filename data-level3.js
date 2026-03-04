@@ -1,11 +1,12 @@
+// data-level3.js
 window.LEVEL3 = {
   image: {
-    url: "assets/V1.png",
+    url: "assets/V1.png",   // IMPORTANT: filename is case-sensitive on GitHub Pages
     width: 3312,
     height: 2019
   },
 
-  // Optional: blocks for understanding (not used for routing)
+  // Optional blocks (for understanding only)
   blocks: {
     A:  { x: 410,  y: 670  },
     B:  { x: 1090, y: 430  },
@@ -19,6 +20,7 @@ window.LEVEL3 = {
     J:  { x: 3010, y: 786  }
   },
 
+  // One hallway network for the entire floor
   hallway: {
     nodes: {
       H01: { x: 89,  y: 919 },
@@ -47,49 +49,125 @@ window.LEVEL3 = {
     ]
   },
 
-  // Rooms start with null coords; you will click-place them
-  rooms: [
-  {"code": "MCA 311","x": 252,"y": 772},
-  {"code": "MCA 330","x": 498,"y": 524},
-  {"code": "MCA 306","x": 129,"y": 860},
-  {"code": "MCA 304","x": 102,"y": 855},
-  {"code": "MCA 305","x": 104,"y": 822},
-  {"code": "MCA 307","x": 120,"y": 824},
-  {"code": "MCA 310","x": 215,"y": 828},
-  {"code": "MCA 313","x": 289,"y": 745},
-  {"code": "MCA 316","x": 308,"y": 726},
-  {"code": "MCA 317","x": 331,"y": 704},
-  {"code": "MCA 318","x": 355,"y": 679},
-  {"code": "MCA 320","x": 374,"y": 659},
-  {"code": "MCA 321","x": 397,"y": 638},
-  {"code": "MCA 322","x": 420,"y": 616},
-  {"code": "MCA 324","x": 441,"y": 593},
-  {"code": "MCA 326","x": 462,"y": 571},
-  {"code": "MCA 328","x": 488,"y": 547},
-  {"code": "MCA 331","x": 528,"y": 505},
-  {"code": "MCA 312","x": 293,"y": 795},
-  {"code": "MCA 314","x": 310,"y": 780},
-  {"code": "MCA 338","x": 369,"y": 840},
-  {"code": "MCA 315","x": 359,"y": 731},
-  {"code": "MCA 319","x": 414,"y": 678},
-  {"code": "MCA 323","x": 498,"y": 710},
-  {"code": "MCA 325","x": 488,"y": 605},
-  {"code": "MCA 327","x": 513,"y": 582},
-  {"code": "MCA 329","x": 533,"y": 556},
-  {"code": "MCA 334","x": 571,"y": 538},
-  {"code": "MCA 332","x": 554,"y": 487},
-  {"code": "MCA 333","x": 578,"y": 488},
-  {"code": "MCA 335","x": 609,"y": 488},
-  {"code": "MCA 336","x": 667,"y": 489},
-  {"code": "MCA 302","x": 184,"y": 1056},
-  {"code": "MCA 300","x": 217,"y": 1162},
-  {"code": "MCA 303","x": 230,"y": 892}
+  // ✅ Rooms grouped by block (source of truth)
+  roomsByBlock: {
+    // -------- Block A (already placed) --------
+    A: [
+      { code: "MCA 300", x: 217, y: 1162 },
+      { code: "MCA 302", x: 184, y: 1056 },
+      { code: "MCA 303", x: 230, y: 892 },
+
+      { code: "MCA 304", x: 102, y: 855 },
+      { code: "MCA 305", x: 104, y: 822 },
+      { code: "MCA 306", x: 129, y: 860 },
+      { code: "MCA 307", x: 120, y: 824 },
+
+      { code: "MCA 310", x: 215, y: 828 },
+      { code: "MCA 311", x: 252, y: 772 },
+      { code: "MCA 312", x: 293, y: 795 },
+      { code: "MCA 313", x: 289, y: 745 },
+      { code: "MCA 314", x: 310, y: 780 },
+      { code: "MCA 315", x: 359, y: 731 },
+      { code: "MCA 316", x: 308, y: 726 },
+      { code: "MCA 317", x: 331, y: 704 },
+      { code: "MCA 318", x: 355, y: 679 },
+      { code: "MCA 319", x: 414, y: 678 },
+      { code: "MCA 320", x: 374, y: 659 },
+      { code: "MCA 321", x: 397, y: 638 },
+      { code: "MCA 322", x: 420, y: 616 },
+      { code: "MCA 323", x: 498, y: 710 },
+      { code: "MCA 324", x: 441, y: 593 },
+      { code: "MCA 325", x: 488, y: 605 },
+      { code: "MCA 326", x: 462, y: 571 },
+      { code: "MCA 327", x: 513, y: 582 },
+      { code: "MCA 328", x: 488, y: 547 },
+      { code: "MCA 329", x: 533, y: 556 },
+      { code: "MCA 330", x: 498, y: 524 },
+      { code: "MCA 331", x: 528, y: 505 },
+      { code: "MCA 332", x: 554, y: 487 },
+      { code: "MCA 333", x: 578, y: 488 },
+      { code: "MCA 334", x: 571, y: 538 },
+      { code: "MCA 335", x: 609, y: 488 },
+      { code: "MCA 336", x: 667, y: 489 },
+      { code: "MCA 338", x: 369, y: 840 }
+    ],
+
+    // -------- Block B (codes added, coords not placed yet) --------
+    B: [
+      { code: "MCB 300", x: null, y: null },
+      { code: "MCB 301", x: null, y: null },
+      { code: "MCB 302", x: null, y: null },
+
+      { code: "MCB 303",  x: null, y: null },
+      { code: "MCB 303A", x: null, y: null },
+      { code: "MCB 303B", x: null, y: null },
+
+      { code: "MCB 304",  x: null, y: null },
+      { code: "MCB 304A", x: null, y: null },
+
+      { code: "MCB 305", x: null, y: null },
+      { code: "MCB 306", x: null, y: null },
+      { code: "MCB 307", x: null, y: null },
+      { code: "MCB 308", x: null, y: null },
+      { code: "MCB 309", x: null, y: null },
+      { code: "MCB 310", x: null, y: null },
+      { code: "MCB 311", x: null, y: null },
+      { code: "MCB 312", x: null, y: null },
+      { code: "MCB 313", x: null, y: null },
+      { code: "MCB 314", x: null, y: null },
+      { code: "MCB 315", x: null, y: null },
+      { code: "MCB 316", x: null, y: null },
+      { code: "MCB 317", x: null, y: null },
+      { code: "MCB 318", x: null, y: null },
+      { code: "MCB 319", x: null, y: null },
+      { code: "MCB 320", x: null, y: null },
+      { code: "MCB 321", x: null, y: null },
+
+      { code: "MCB 322",  x: null, y: null },
+      { code: "MCB 322A", x: null, y: null },
+
+      { code: "MCB 323", x: null, y: null },
+      { code: "MCB 324", x: null, y: null },
+      { code: "MCB 325", x: null, y: null },
+      { code: "MCB 326", x: null, y: null },
+      { code: "MCB 327", x: null, y: null },
+      { code: "MCB 328", x: null, y: null },
+      { code: "MCB 329", x: null, y: null },
+      { code: "MCB 330", x: null, y: null },
+      { code: "MCB 331", x: null, y: null },
+      { code: "MCB 332", x: null, y: null },
+      { code: "MCB 333", x: null, y: null },
+      { code: "MCB 334", x: null, y: null },
+      { code: "MCB 335", x: null, y: null },
+      { code: "MCB 336", x: null, y: null }
+    ],
+
+    // -------- Block C (fill later) --------
+    C: [
+      // Example:
+      // { code: "MCC 320", x: null, y: null },
+    ],
+
+    // Keep empty blocks for future
+    D: [],
+    E: [],
+    F: [],
+    G: [],
+    H: [],
+    IH: [],
+    J: []
+  },
+
+  // POIs (washrooms now; photocopy/electrical later)
+  pois: [
+    { id: "WR_1", label: "Female Washroom", type: "washroom", x: 648, y: 566 },
+    { id: "WR_2", label: "Male Washroom", type: "washroom", x: 527, y: 684 }
   ],
 
-  pois: [
-    { id: "WR_1", label: "Female Washroom", type: "washroom",x: 648,y: 566},
-    { id: "WR_2", label: "Male Washroom", type: "washroom", x: 527,y: 684 }
-  ]
+  // Optional ETA calibration (use later if you add ETA)
+  calibration: {
+    metersPerPixel: 0.03,
+    walkingSpeedMps: 1.3
+  }
 };
-
 

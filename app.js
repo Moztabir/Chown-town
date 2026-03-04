@@ -1,3 +1,12 @@
+// app.js
+// Clean UI behavior:
+// - Directions hidden by default
+// - Directions shown only after successful Route
+// - Clear hides directions + clears route
+// - Search suggestions for rooms + washrooms (washrooms always searchable)
+// - Washroom checkbox ONLY toggles washroom icons on the map (not search)
+// - Uses roomsByBlock as source of truth
+
 document.addEventListener("DOMContentLoaded", () => {
   const data = window.LEVEL3;
   if (!data) {
@@ -5,50 +14,59 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
-  // Ensure arrays exist
-  if (!Array.isArray(data.rooms)) data.rooms = [];
-  if (!Array.isArray(data.pois)) data.pois = [];
+  // ---------- Required DOM ----------
+  const mapDiv = document.getElementById("chownMap");
+  const routeBtn = document.getElementById("routeBtn");
+  const clearRouteBtn = document.getElementById("clearRouteBtn");
+  const stepsOl = document.getElementById("steps");
 
-  // =========================
-  // UI (Search)
-  // =========================
+  if (!mapDiv || !routeBtn || !clearRouteBtn || !stepsOl) {
+    console.error("Missing required HTML IDs (chownMap, routeBtn, clearRouteBtn, steps).");
+    return;
+  }
+
+  // ---------- Optional DOM ----------
   const startSearch = document.getElementById("startSearch");
   const endSearch = document.getElementById("endSearch");
   const startResults = document.getElementById("startResults");
   const endResults = document.getElementById("endResults");
 
-  const routeBtn = document.getElementById("routeBtn");
-  const clearRouteBtn = document.getElementById("clearRouteBtn");
-  const stepsOl = document.getElementById("steps");
-
-  // Filters (we implement washroom now)
   const filterWashroom = document.getElementById("filterWashroom");
-  // (photocopy/electrical can be added later the same way)
 
-  // Optional room placement UI you already have
-  const modeSelect = document.getElementById("modeSelect");   // route | roomAdd
+  // Admin placement (optional)
+  const modeSelect = document.getElementById("modeSelect"); // route | roomAdd
   const roomSelect = document.getElementById("roomSelect");
   const roomCodeInput = document.getElementById("roomCodeInput");
   const addRoomBtn = document.getElementById("addRoomBtn");
   const clearRoomsBtn = document.getElementById("clearRoomsBtn");
   const roomsOut = document.getElementById("roomsOut");
 
-  // =========================
-  // MAP INIT
-  // =========================
+  // Directions wrapper
+  const directionsCard = document.getElementById("directionsCard");
+  const etaText = document.getElementById("etaText");
+
+  // ---------- Data safety ----------
+  if (!data.image || typeof data.image.width !== "number" || typeof data.image.height !== "number") {
+    console.error("LEVEL3.image missing width/height");
+    return;
+  }
+  if (!data.hallway || !data.hallway.nodes || !Array.isArray(data.hallway.edges)) {
+    console.error("LEVEL3.hallway missing nodes/edges");
+    return;
+  }
+  if (!data.roomsByBlock || typeof data.roomsByBlock !== "object") data.roomsByBlock = {};
+  if (!Array.isArray(data.pois)) data.pois = [];
+
+  // ---------- Map init ----------
   const map = L.map("chownMap", { crs: L.CRS.Simple, minZoom: -2, maxZoom: 4 });
   const bounds = [[0, 0], [data.image.height, data.image.width]];
   L.imageOverlay(data.image.url, bounds).addTo(map);
   map.fitBounds(bounds);
 
-  const hallwayLayer = L.layerGroup().addTo(map);
-  const roomLayer = L.layerGroup().addTo(map);
   const poiLayer = L.layerGroup().addTo(map);
   const routeLayer = L.layerGroup().addTo(map);
 
-  // =========================
-  // HELPERS
-  // =========================
+  // ---------- UI helpers ----------
   function setSteps(lines) {
     stepsOl.innerHTML = "";
     lines.forEach((t) => {
@@ -58,168 +76,243 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  function showDirections() {
+    if (directionsCard) directionsCard.classList.remove("d-none");
+  }
+
+  function hideDirections() {
+    if (directionsCard) directionsCard.classList.add("d-none");
+    if (etaText) etaText.textContent = "";
+    setSteps([]);
+  }
+
+  // Hide directions by default
+  hideDirections();
+
+  // ---------- Math helpers ----------
   function dist(a, b) {
     const dx = a.x - b.x;
     const dy = a.y - b.y;
     return Math.sqrt(dx * dx + dy * dy);
   }
 
-  function roomIcon(text) {
-    return L.divIcon({
-      className: "",
-      html: `
-        <div style="
-          padding:6px 10px;border-radius:999px;
-          background:#fff;border:2px solid #111;
-          font-weight:700;font-size:12px;color:#111;
-          box-shadow:0 4px 10px rgba(0,0,0,.25);
-          white-space:nowrap;
-        ">${text}</div>
-      `,
-      iconSize: [1, 1],
-      iconAnchor: [0, 0],
-    });
+  // ---------- roomsByBlock helpers ----------
+  function getAllRooms() {
+    const out = [];
+    for (const blockKey of Object.keys(data.roomsByBlock)) {
+      const arr = data.roomsByBlock[blockKey] || [];
+      for (const r of arr) out.push({ code: r.code, x: r.x, y: r.y, block: blockKey });
+    }
+    out.sort((a, b) => String(a.code).localeCompare(String(b.code)));
+    return out;
   }
 
-  function poiIcon(label, type) {
-    const bg = type === "washroom" ? "#1976d2" : "#444";
-    return L.divIcon({
-      className: "",
-      html: `
-        <div style="
-          padding:6px 10px;border-radius:999px;
-          background:${bg};border:2px solid #111;
-          font-weight:800;font-size:12px;color:#fff;
-          box-shadow:0 4px 10px rgba(0,0,0,.25);
-          white-space:nowrap;
-        ">${label}</div>
-      `,
-      iconSize: [1, 1],
-      iconAnchor: [0, 0],
-    });
+  function findRoomInBlocks(code) {
+    for (const blockKey of Object.keys(data.roomsByBlock)) {
+      const arr = data.roomsByBlock[blockKey] || [];
+      for (const r of arr) {
+        if (r.code === code) return { blockKey, roomObj: r };
+      }
+    }
+    return null;
   }
 
-  function entryIcon() {
-    return L.divIcon({
-      className: "",
-      html: `
-        <div style="
-          width:12px;height:12px;border-radius:999px;
-          background:#111;border:2px solid #fff;
-          box-shadow:0 2px 8px rgba(0,0,0,.25);
-        "></div>
-      `,
-      iconSize: [12, 12],
-      iconAnchor: [6, 6],
-    });
-  }
-
-  // =========================
-  // HALLWAYS
-  // =========================
-  // Hallway visuals disabled for clean UI
-function drawHallwaysVisual() {
-  hallwayLayer.clearLayers();
-}
-// drawHallwaysVisual(); //
-
-
-  // =========================
-  // DRAW ROOMS + POIs
-  // =========================
   function renderRoomsJSON() {
     if (!roomsOut) return;
-    roomsOut.textContent = JSON.stringify(data.rooms, null, 2);
+    roomsOut.textContent = JSON.stringify(data.roomsByBlock, null, 2);
   }
 
-  function refreshRoomSelect() {
+  function refreshRoomSelectOptions() {
     if (!roomSelect) return;
     const current = roomSelect.value;
     roomSelect.innerHTML = "";
-    data.rooms.forEach((r) => roomSelect.add(new Option(r.code, r.code)));
-    if (current && data.rooms.some(r => r.code === current)) roomSelect.value = current;
+    getAllRooms().forEach(r => roomSelect.add(new Option(r.code, r.code)));
+    if (current) roomSelect.value = current;
   }
 
-  // Classroom markers disabled for clean UI
-function drawRooms() {
-  roomLayer.clearLayers();
-}
-
-
-  function drawPois() {
-    poiLayer.clearLayers();
-    data.pois.forEach((p) => {
-      if (p.x == null || p.y == null) return;
-      L.marker([p.y, p.x], { icon: poiIcon(p.label, p.type) })
-        .addTo(poiLayer)
-        .bindPopup(`<b>${p.label}</b><br>Type: ${p.type}`);
-    });
-  }
-
-  drawRooms();
-  drawPois();
-  refreshRoomSelect();
+  refreshRoomSelectOptions();
   renderRoomsJSON();
 
-  // =========================
-  // ADD ROOMS BY TYPING (optional)
-  // =========================
+  // ---------- Optional: Add room codes by typing (supports 304A etc.) ----------
   function normalizeRoomCode(code) {
-    const c = (code || "").toUpperCase().replace(/\s+/g, "").trim();
-    if (c.length < 6) return null;
-    const prefix = c.slice(0, 3);
-    const num = c.slice(3);
+    const raw = (code || "").toUpperCase().replace(/\s+/g, "").trim();
+    if (raw.length < 6) return null;
+
+    const prefix = raw.slice(0, 3); // MCA/MCB/MCC
+    const rest = raw.slice(3);      // 304 or 304A
+
     if (!/^[A-Z]{3}$/.test(prefix)) return null;
-    if (!/^\d{3}$/.test(num)) return null;
-    return `${prefix} ${num}`;
+    if (!/^\d{3}[A-Z]?$/.test(rest)) return null;
+
+    return `${prefix} ${rest}`;
   }
 
-  function addRoomCode(codeRaw) {
-    const code = normalizeRoomCode(codeRaw);
-    if (!code) { alert("Invalid room code. Use MCA 302"); return null; }
-    if (data.rooms.some(r => r.code === code)) { alert(`${code} already exists`); return null; }
-    const newRoom = { code, x: null, y: null };
-    data.rooms.push(newRoom);
-    refreshRoomSelect();
-    renderRoomsJSON();
-    return newRoom;
+  function inferBlockFromCode(code) {
+    // MCA -> A, MCB -> B, MCC -> C ...
+    return code.slice(2, 3);
   }
 
   addRoomBtn?.addEventListener("click", () => {
-    const added = addRoomCode(roomCodeInput?.value);
-    if (added && roomSelect) roomSelect.value = added.code;
+    const norm = normalizeRoomCode(roomCodeInput?.value);
+    if (!norm) return alert("Invalid code. Example: MCB 304A");
+
+    if (getAllRooms().some(r => r.code === norm)) return alert(`${norm} already exists.`);
+
+    const block = inferBlockFromCode(norm);
+    if (!data.roomsByBlock[block]) data.roomsByBlock[block] = [];
+    data.roomsByBlock[block].push({ code: norm, x: null, y: null });
+
     if (roomCodeInput) roomCodeInput.value = "";
+    refreshRoomSelectOptions();
+    renderRoomsJSON();
+    if (roomSelect) roomSelect.value = norm;
   });
 
   roomCodeInput?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") addRoomBtn?.click();
   });
 
-  // click-place rooms
+  clearRoomsBtn?.addEventListener("click", () => {
+    for (const blockKey of Object.keys(data.roomsByBlock)) {
+      (data.roomsByBlock[blockKey] || []).forEach(r => { r.x = null; r.y = null; });
+    }
+    renderRoomsJSON();
+  });
+
+  // Click-place coordinates (only if admin mode exists)
   map.on("click", (e) => {
     if (!modeSelect || modeSelect.value !== "roomAdd") return;
     const code = roomSelect?.value;
     if (!code) return;
 
-    const r = data.rooms.find(rr => rr.code === code);
-    if (!r) return;
+    const found = findRoomInBlocks(code);
+    if (!found) return;
 
-    r.x = Math.round(e.latlng.lng);
-    r.y = Math.round(e.latlng.lat);
+    found.roomObj.x = Math.round(e.latlng.lng);
+    found.roomObj.y = Math.round(e.latlng.lat);
 
-    drawRooms();
     renderRoomsJSON();
   });
 
-  clearRoomsBtn?.addEventListener("click", () => {
-    data.rooms.forEach(r => { r.x = null; r.y = null; });
-    drawRooms();
-    renderRoomsJSON();
+  // ---------- POIs: washroom visibility ----------
+  function drawWashrooms() {
+    poiLayer.clearLayers();
+    if (!filterWashroom?.checked) return;
+
+    const washrooms = data.pois.filter(p =>
+      p && p.type === "washroom" && typeof p.x === "number" && typeof p.y === "number"
+    );
+
+    washrooms.forEach(w => {
+      L.circleMarker([w.y, w.x], {
+        radius: 8,
+        color: "#1976d2",
+        fillColor: "#1976d2",
+        fillOpacity: 1
+      }).addTo(poiLayer).bindPopup(`<b>${w.label || "Washroom"}</b>`);
+    });
+  }
+
+  filterWashroom?.addEventListener("change", () => {
+    drawWashrooms();
+    if (startResults) startResults.innerHTML = "";
+    if (endResults) endResults.innerHTML = "";
   });
 
-  // =========================
-  // ROUTING CORE (snap to edge)
-  // =========================
+  drawWashrooms();
+
+  // ---------- Search (rooms + washrooms always searchable) ----------
+  function normalizeQuery(s) {
+    return (s || "").toUpperCase().trim();
+  }
+
+  function getSearchItems() {
+    const items = [];
+
+    // rooms
+    getAllRooms().forEach(r => items.push({ kind: "room", code: r.code, ref: r }));
+
+    // washrooms ALWAYS searchable
+    data.pois
+      .filter(p => p && p.type === "washroom" && typeof p.x === "number" && typeof p.y === "number")
+      .forEach(p => items.push({ kind: "poi", code: p.label, ref: p }));
+
+    return items;
+  }
+
+  function doSearch(q) {
+    const qq = normalizeQuery(q);
+    if (!qq) return [];
+    return getSearchItems()
+      .filter(it => normalizeQuery(it.code).includes(qq))
+      .slice(0, 10);
+  }
+
+  function renderResults(container, results, onPick) {
+    if (!container) return;
+    container.innerHTML = "";
+    results.forEach(r => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "list-group-item list-group-item-action py-1";
+      btn.textContent = r.code;
+      btn.addEventListener("click", () => onPick(r));
+      container.appendChild(btn);
+    });
+  }
+
+  let selectedStart = null;
+  let selectedEnd = null;
+
+  function pickStart(item) {
+    selectedStart = item;
+    if (startSearch) startSearch.value = item.code;
+    if (startResults) startResults.innerHTML = "";
+  }
+
+  function pickEnd(item) {
+    selectedEnd = item;
+    if (endSearch) endSearch.value = item.code;
+    if (endResults) endResults.innerHTML = "";
+  }
+
+  startSearch?.addEventListener("input", () => {
+    renderResults(startResults, doSearch(startSearch.value), pickStart);
+  });
+
+  endSearch?.addEventListener("input", () => {
+    renderResults(endResults, doSearch(endSearch.value), pickEnd);
+  });
+
+  // Exact match on Enter (so you don't have to click suggestions)
+  startSearch?.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter") return;
+    const typed = startSearch.value.trim();
+    const exact = getSearchItems().find(it => it.code === typed);
+    if (exact) pickStart(exact);
+  });
+
+  endSearch?.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter") return;
+    const typed = endSearch.value.trim();
+    const exact = getSearchItems().find(it => it.code === typed);
+    if (exact) pickEnd(exact);
+  });
+
+  // ---------- Routing core (snap to edge + dijkstra) ----------
+  function clearRoute() {
+    routeLayer.clearLayers();
+    map.fitBounds(bounds);
+    hideDirections();
+  }
+
+  function getPointFromItem(item) {
+    if (!item) return null;
+    const p = item.ref;
+    if (p.x == null || p.y == null) return null;
+    return { x: p.x, y: p.y };
+  }
+
   function closestPointOnSegment(P, A, B) {
     const ABx = B.x - A.x, ABy = B.y - A.y;
     const APx = P.x - A.x, APy = P.y - A.y;
@@ -227,7 +320,7 @@ function drawRooms() {
     const ab2 = ABx * ABx + ABy * ABy;
     if (ab2 === 0) {
       const dx = P.x - A.x, dy = P.y - A.y;
-      return { x: A.x, y: A.y, t: 0, dist2: dx * dx + dy * dy };
+      return { x: A.x, y: A.y, dist2: dx*dx + dy*dy };
     }
 
     let t = (APx * ABx + APy * ABy) / ab2;
@@ -237,7 +330,7 @@ function drawRooms() {
     const y = A.y + t * ABy;
 
     const dx = P.x - x, dy = P.y - y;
-    return { x, y, t, dist2: dx * dx + dy * dy };
+    return { x, y, dist2: dx*dx + dy*dy };
   }
 
   function snapPointToHallwayEdge(hallway, point) {
@@ -260,36 +353,35 @@ function drawRooms() {
     };
   }
 
-  function insertEntryNode(workingHallway, entryId, point) {
-    const snap = snapPointToHallwayEdge(workingHallway, point);
+  function insertEntryNode(working, entryId, point) {
+    const snap = snapPointToHallwayEdge(working, point);
     if (!snap) return null;
 
     const { u, v, proj } = snap;
-    workingHallway.nodes[entryId] = { x: proj.x, y: proj.y };
+    working.nodes[entryId] = { x: proj.x, y: proj.y };
 
-    workingHallway.edges = workingHallway.edges.filter(([a,b]) =>
-      !((a === u && b === v) || (a === v && b === u))
+    working.edges = working.edges.filter(([a,b]) =>
+      !((a===u && b===v) || (a===v && b===u))
     );
 
-    workingHallway.edges.push([u, entryId]);
-    workingHallway.edges.push([entryId, v]);
-
+    working.edges.push([u, entryId]);
+    working.edges.push([entryId, v]);
     return entryId;
   }
 
-  function buildAdjFor(hallway) {
+  function buildAdjFor(h) {
     const adj = {};
-    Object.keys(hallway.nodes).forEach(k => (adj[k] = []));
-    hallway.edges.forEach(([u,v]) => {
-      const w = dist(hallway.nodes[u], hallway.nodes[v]);
+    Object.keys(h.nodes).forEach(k => (adj[k] = []));
+    h.edges.forEach(([u,v]) => {
+      const w = dist(h.nodes[u], h.nodes[v]);
       adj[u].push({ to: v, w });
       adj[v].push({ to: u, w });
     });
     return adj;
   }
 
-  function dijkstraFor(hallway, start, end) {
-    const adj = buildAdjFor(hallway);
+  function dijkstraFor(h, start, end) {
+    const adj = buildAdjFor(h);
     const nodes = Object.keys(adj);
 
     const distMap = {};
@@ -328,118 +420,88 @@ function drawRooms() {
     return path;
   }
 
-  // =========================
-  // SEARCH
-  // =========================
-  function normalizeQuery(s) {
-    return (s || "").toUpperCase().trim();
+  // ---------- Directions (ETA + left/right) ----------
+  function simplifyPoints(points, minSegmentPx = 18) {
+    const out = [];
+    for (const p of points) {
+      if (out.length === 0) { out.push(p); continue; }
+      const last = out[out.length - 1];
+      if (Math.hypot(p.x - last.x, p.y - last.y) >= minSegmentPx) out.push(p);
+    }
+    return out;
   }
 
-  function getAllSearchItems() {
-    // Rooms always searchable
-    const items = data.rooms.map(r => ({ kind: "room", code: r.code, ref: r }));
-
-    // POIs searchable if filter allows
-    const wantWashrooms = !!filterWashroom?.checked;
-
-    // If no filters checked, show all POIs. If washroom checked, show washrooms.
-    const anyFilter = wantWashrooms;
-    const poisToShow = anyFilter
-      ? data.pois.filter(p => (wantWashrooms ? p.type === "washroom" : true))
-      : data.pois;
-
-    poisToShow.forEach(p => items.push({ kind: "poi", code: p.label, ref: p }));
-
-    return items;
+  function signedAngleDeg(a, b, c) {
+    const v1 = { x: a.x - b.x, y: a.y - b.y };
+    const v2 = { x: c.x - b.x, y: c.y - b.y };
+    const dot = v1.x * v2.x + v1.y * v2.y;
+    const cross = v1.x * v2.y - v1.y * v2.x;
+    return Math.atan2(cross, dot) * (180 / Math.PI);
   }
 
-  function search(items, q) {
-    if (!q) return [];
-    const qq = normalizeQuery(q);
-    return items
-      .filter(it => normalizeQuery(it.code).includes(qq))
-      .slice(0, 8);
+  function turnText(angle) {
+    const abs = Math.abs(angle);
+    if (abs < 25) return null;
+    return angle > 0 ? "Turn left" : "Turn right";
   }
 
-  function renderResults(container, results, onPick) {
-    container.innerHTML = "";
-    results.forEach(r => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "list-group-item list-group-item-action py-1";
-      btn.textContent = r.code;
-      btn.addEventListener("click", () => onPick(r));
-      container.appendChild(btn);
-    });
+  function routeDistancePx(points) {
+    let d = 0;
+    for (let i = 1; i < points.length; i++) {
+      d += Math.hypot(points[i].x - points[i-1].x, points[i].y - points[i-1].y);
+    }
+    return d;
   }
 
-  // selected objects can be room or poi
-  let selectedStart = null; // {kind, code, ref}
-  let selectedEnd = null;
-
-  function pickStart(item) {
-    selectedStart = item;
-    startSearch.value = item.code;
-    startResults.innerHTML = "";
+  function computeETA(distancePx) {
+    const mpp = data.calibration?.metersPerPixel ?? 0.03;
+    const speed = data.calibration?.walkingSpeedMps ?? 1.3;
+    const meters = distancePx * mpp;
+    const minutes = Math.max(1, Math.round((meters / speed) / 60));
+    return { meters: Math.round(meters), minutes };
   }
 
-  function pickEnd(item) {
-    selectedEnd = item;
-    endSearch.value = item.code;
-    endResults.innerHTML = "";
-  }
+  function buildTurnByTurn(hallwayPoints, startLabel, endLabel) {
+    const pts = simplifyPoints(hallwayPoints);
 
-  startSearch.addEventListener("input", () => {
-    const items = getAllSearchItems();
-    const results = search(items, startSearch.value);
-    renderResults(startResults, results, pickStart);
-  });
+    const px = routeDistancePx(pts);
+    const { meters, minutes } = computeETA(px);
 
-  endSearch.addEventListener("input", () => {
-    const items = getAllSearchItems();
-    const results = search(items, endSearch.value);
-    renderResults(endResults, results, pickEnd);
-  });
+    const steps = [];
+    const etaLine = `ETA: ~${minutes} min (${meters} m)`;
+    steps.push(etaLine);
+    steps.push(`Start: ${startLabel}`);
 
-  // When filter changes, clear results so you see updated list
-  filterWashroom?.addEventListener("change", () => {
-    startResults.innerHTML = "";
-    endResults.innerHTML = "";
-  });
+    if (pts.length >= 2) {
+      steps.push("Go straight");
+      for (let i = 1; i < pts.length - 1; i++) {
+        const a = pts[i - 1], b = pts[i], c = pts[i + 1];
+        const ang = signedAngleDeg(a, b, c);
+        const t = turnText(ang);
+        if (t) steps.push(t);
+      }
+    }
 
-  // =========================
-  // ROUTING
-  // =========================
-  function clearRoute() {
-    routeLayer.clearLayers();
-    stepsOl.innerHTML = "";
-    map.fitBounds(bounds);
-  }
+    steps.push(`Arrive: ${endLabel}`);
 
-  function getPointFromItem(item) {
-    if (!item) return null;
-    const p = item.ref;
-    if (p.x == null || p.y == null) return null;
-    return { x: p.x, y: p.y };
+    if (etaText) etaText.textContent = etaLine.replace("ETA:", "ETA");
+    return steps;
   }
 
   function routeItems(startItem, endItem) {
-    clearRoute();
+    routeLayer.clearLayers();
+
+    if (!startItem || !endItem) {
+      hideDirections();
+      return alert("Select Start and End from suggestions (or press Enter for exact match).");
+    }
 
     const A = getPointFromItem(startItem);
     const B = getPointFromItem(endItem);
 
-    if (!startItem || !endItem) {
-      setSteps(["Pick Start and End from the search results first."]);
-      return;
-    }
-
     if (!A || !B) {
-      setSteps([
-        "Missing coordinates for Start/End.",
-        "Make sure rooms are placed and washrooms have x/y in data-level3.js."
-      ]);
-      return;
+      hideDirections();
+      return alert("Missing coordinates for Start/End. Click-place missing rooms or add POI coords.");
     }
 
     const working = cloneHallway(data.hallway);
@@ -447,14 +509,14 @@ function drawRooms() {
     const eId = insertEntryNode(working, "ENTRY_END", B);
 
     if (!sId || !eId) {
-      setSteps(["Could not snap to hallway edges. Check hallway coverage."]);
-      return;
+      hideDirections();
+      return alert("Could not snap to hallways. Add more hallway edges near these rooms.");
     }
 
     const hallwayPath = dijkstraFor(working, sId, eId);
     if (!hallwayPath.length) {
-      setSteps(["No connected hallway path found."]);
-      return;
+      hideDirections();
+      return alert("No connected hallway path found (graph disconnected).");
     }
 
     const coords = [
@@ -463,7 +525,7 @@ function drawRooms() {
         const p = working.nodes[id];
         return [p.y, p.x];
       }),
-      [B.y, B.x],
+      [B.y, B.x]
     ];
 
     const mainLine = L.polyline(coords, { weight: 8, opacity: 0.9 }).addTo(routeLayer);
@@ -471,25 +533,18 @@ function drawRooms() {
     // dashed connectors
     const sPt = working.nodes[sId];
     const ePt = working.nodes[eId];
-
     L.polyline([[A.y, A.x], [sPt.y, sPt.x]], { dashArray: "6 8", weight: 4, opacity: 0.85 }).addTo(routeLayer);
     L.polyline([[B.y, B.x], [ePt.y, ePt.x]], { dashArray: "6 8", weight: 4, opacity: 0.85 }).addTo(routeLayer);
 
-    // entry dots
-    // L.marker([startEntryPt.y, startEntryPt.x], { icon: entryIcon() }).addTo(routeLayer);
-    // L.marker([endEntryPt.y, endEntryPt.x], { icon: entryIcon() }).addTo(routeLayer);
-
-
     map.fitBounds(mainLine.getBounds(), { padding: [40, 40] });
 
-    setSteps([
-      `Start: ${startItem.code}`,
-      `Go through hallways`,
-      `Arrive: ${endItem.code}`
-    ]);
+    const hallwayPoints = hallwayPath.map(id => working.nodes[id]);
+    const steps = buildTurnByTurn(hallwayPoints, startItem.code, endItem.code);
+    setSteps(steps);
+    showDirections();
   }
 
+  // Buttons
   routeBtn.addEventListener("click", () => routeItems(selectedStart, selectedEnd));
   clearRouteBtn.addEventListener("click", clearRoute);
 });
-

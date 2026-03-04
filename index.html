@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Chown Town – Indoor Navigation</title>
 
   <!-- Bootstrap CSS -->
@@ -11,7 +11,7 @@
     rel="stylesheet"
     integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
     crossorigin="anonymous"
-  >
+  />
 
   <!-- Leaflet CSS -->
   <link
@@ -19,212 +19,167 @@
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
     crossorigin=""
-  >
+  />
 
   <!-- Bootstrap Icons -->
   <link
     href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
     rel="stylesheet"
-  >
+  />
 
   <!-- Your CSS -->
-  <link rel="stylesheet" href="style.css">
-</head>
-
+  <link rel="stylesheet" href="style.css" />
 <body>
 
-<!-- ================= HEADER ================= -->
-<header class="navbar navbar-dark sticky-top shadow-sm" style="background:#999999;">
+  <!-- HEADER -->
+  <header class="navbar navbar-dark sticky-top shadow-sm" style="background:#999999;">
     <div class="container d-flex align-items-center">
       <a class="navbar-brand d-flex align-items-center" href="index.html">
         <img src="assets/ct_logo.png" alt="Chown Town Logo" class="brand-logo me-2">
         <span class="brand-title">Chown Town</span>
       </a>
 
-
-      <!-- Toggler -->
-      <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#mainMenu"
-        aria-controls="mainMenu" aria-label="Open navigation">
+      <!-- Menu -->
+      <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#mainMenu">
         <span class="navbar-toggler-icon"></span>
       </button>
 
-      <div class="offcanvas offcanvas-end sidebar-offcanvas" tabindex="-1" id="mainMenu" aria-labelledby="mainMenuLabel">
-  <!-- Top bar inside sidebar -->
-  <div class="offcanvas-header border-bottom">
-    <span class="sidebar-logo">CT</span>
+      <div class="offcanvas offcanvas-end sidebar-offcanvas" tabindex="-1" id="mainMenu">
+        <div class="offcanvas-header border-bottom">
+          <span class="sidebar-logo">CT</span>
+          <a href="index.html" class="sidebar-home-icon ms-auto" aria-label="Home">
+            <i class="bi bi-house-door"></i>
+          </a>
+        </div>
 
-    <a href="index.html" class="sidebar-home-icon">
-      <i class="bi bi-house-door"></i>
-    </a>
-  </div>
+        <div class="offcanvas-body d-flex flex-column">
+          <nav class="sidebar-nav">
+            <a class="sidebar-link" href="index.html">
+              <i class="bi bi-grid-1x2"></i>
+              <span>Map</span>
+            </a>
+            <a class="sidebar-link" href="about.html">
+              <i class="bi bi-buildings"></i>
+              <span>About</span>
+            </a>
+            <a class="sidebar-link" href="contact.html">
+              <i class="bi bi-grid-3x3-gap"></i>
+              <span>Contact Us</span>
+            </a>
+          </nav>
 
-  <!-- Body -->
-  <div class="offcanvas-body d-flex flex-column">
+          <hr class="my-3">
 
-    <!-- Main nav items -->
-    <nav class="sidebar-nav">
-      <a class="sidebar-link" href="map.html">
-        <i class="bi bi-grid-1x2"></i>
-        <span>Map</span>
-      </a>
-
-      <a class="sidebar-link" href="about.html">
-        <i class="bi bi-buildings"></i>
-        <span>About</span>
-      </a>
-
-      <a class="sidebar-link" href="contact.html">
-        <i class="bi bi-grid-3x3-gap"></i>
-        <span>Contact Us</span>
-      </a>
-    </nav>
-
-    <hr class="my-3">
-
-    <!-- Secondary items -->
-    <nav class="sidebar-nav">
-      <a class="sidebar-link" href="#">
-        <i class="bi bi-gear"></i>
-        <span>Settings</span>
-      </a>
-
-      <a class="sidebar-link" href="#">
-        <i class="bi bi-question-circle"></i>
-        <span>Get help</span>
-      </a>
-    </nav>
-
-    <!-- Footer area pinned to bottom -->
-    <div class="mt-auto pt-3 sidebar-footer d-flex justify-content-between align-items-center">
-      <div class="sidebar-footer-links">
-        <a href="privacy_policy.html">Privacy</a>
-        <span class="mx-1">|</span>
-        <a href="#">Accessibility</a>
+          <div class="mt-auto pt-3 sidebar-footer d-flex justify-content-between align-items-center">
+            <div class="sidebar-footer-links">
+              <a href="privacy_policy.html">Privacy</a>
+              <span class="mx-1">|</span>
+              <a href="#">Accessibility</a>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div class="sidebar-social d-flex align-items-center gap-2">
-        <a href="https://www.tiktok.com/@chowntown25" target="_blank" class="sidebar-social-link">
-          <i class="bi bi-tiktok"></i>
-        </a>
-        <a href="https://www.youtube.com/@ChownTown-25" target="_blank" class="sidebar-social-link">
-          <i class="bi bi-youtube"></i>
-        </a>
-        <a href="https://www.instagram.com/chowntown2025" target="_blank" class="sidebar-social-link">
-          <i class="bi bi-instagram"></i>
-        </a>
-      </div>
-    </div>
-  </div>
-</div>
     </div>
   </header>
 
-  
-<!-- ================= MAIN ================= -->
-<main class="container py-4">
+  <!-- MAIN -->
+  <main class="container py-4">
+  <h2 class="mb-3">ChownTown Map (Level 3)</h2>
 
-  <!-- ========= ROUTING CONTROLS ========= -->
-  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+  <!-- Top bar -->
+  <div class="topbar card shadow-sm mb-3">
+    <div class="card-body">
+      <div class="row g-2 align-items-end">
 
-  <div style="min-width:260px;">
-    <label class="small text-muted mb-1 d-block">Start</label>
-    <input id="startSearch" class="form-control form-control-sm" placeholder="Search e.g. MCA 306">
-    <div id="startResults" class="list-group mt-1"></div>
-  </div>
+        <div class="col-12 col-md-4">
+          <label class="small text-muted mb-1">Start</label>
+          <input id="startSearch" class="form-control form-control-sm" placeholder="Search e.g. MCA 306">
+          <div id="startResults" class="list-group mt-1"></div>
+        </div>
 
-  <div style="min-width:260px;">
-    <label class="small text-muted mb-1 d-block">End</label>
-    <input id="endSearch" class="form-control form-control-sm" placeholder="Search e.g. MCA 311">
-    <div id="endResults" class="list-group mt-1"></div>
-  </div>
+        <div class="col-12 col-md-4">
+          <label class="small text-muted mb-1">End</label>
+          <input id="endSearch" class="form-control form-control-sm" placeholder="Search e.g. MCB 320">
+          <div id="endResults" class="list-group mt-1"></div>
+        </div>
 
-  <div class="d-flex gap-2 align-items-end">
-    <button id="routeBtn" class="btn btn-sm btn-dark">Route</button>
-    <button id="clearRouteBtn" class="btn btn-sm btn-outline-dark">Clear</button>
-  </div>
+        <div class="col-12 col-md-4">
+          <label class="small text-muted mb-1">Actions</label>
+          <div class="d-flex gap-2">
+            <button id="routeBtn" class="btn btn-sm btn-dark w-50">Route</button>
+            <button id="clearRouteBtn" class="btn btn-sm btn-outline-dark w-50">Clear</button>
+          </div>
 
-</div>
+          <div class="d-flex align-items-center gap-3 mt-2 flex-wrap">
+            <strong class="small">Filters:</strong>
+            <label class="form-check-label d-flex align-items-center gap-2 small">
+              <input id="filterWashroom" class="form-check-input" type="checkbox">
+              Washroom
+            </label>
+          </div>
+        </div>
 
-<!-- Filters (won’t affect routing yet; ready for later POIs) -->
-<div class="card shadow-sm mb-3">
-  <div class="card-body py-2">
-    <div class="d-flex flex-wrap gap-3 align-items-center">
-      <strong class="me-2">Filters</strong>
-
-      <label class="form-check-label d-flex align-items-center gap-2">
-        <input id="filterWashroom" class="form-check-input" type="checkbox">
-        Washroom
-      </label>
-
-      <label class="form-check-label d-flex align-items-center gap-2">
-        <input id="filterPhotocopy" class="form-check-input" type="checkbox">
-        Photocopy
-      </label>
-
-      <label class="form-check-label d-flex align-items-center gap-2">
-        <input id="filterElectrical" class="form-check-input" type="checkbox">
-        Electrical
-      </label>
+      </div>
     </div>
   </div>
-</div>
 
-  <!-- ========= MAP + DIRECTIONS ========= -->
-  <div class="row g-3">
-    <div class="col-12 col-lg-8">
+  <!-- Map -->
+  <div class="mapShell card shadow-sm mb-3">
+    <div class="card-body p-2">
       <div id="chownMap"></div>
     </div>
-
-    <div class="col-12 col-lg-4">
-      <div class="card shadow-sm">
-        <div class="card-body">
-          <h5 class="card-title mb-2">Directions</h5>
-          <ol id="steps" class="mb-0"></ol>
-        </div>
-      </div>
-    </div>
   </div>
 
+  <!-- Directions (hidden until Route) -->
+  <div id="directionsCard" class="card shadow-sm d-none">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center">
+        <h5 class="mb-2">Directions</h5>
+        <span id="etaText" class="text-muted small"></span>
+      </div>
+      <ol id="steps" class="mb-0"></ol>
+    </div>
+  </div>
 </main>
 
-<!-- ================= FOOTER ================= -->
-    <footer>
-      <nav>
-        <ul>
-          <li><a href="privacy_policy.html">Privacy Policy</a></li>
-          <li><a href="terms_of_service.html">Terms of Service</a></li>
-        </ul>
-      </nav>
+  <!-- FOOTER -->
+  <footer class="mt-4">
+    <nav>
+      <ul>
+        <li><a href="privacy_policy.html">Privacy Policy</a></li>
+        <li><a href="terms_of_service.html">Terms of Service</a></li>
+      </ul>
+    </nav>
 
-      <div class="footer-bottom">
-        <div class="footer-left">
-          <p>© Chowntown 2025</p>
-        </div>
-        <div class="footer-right">
-          <a href="https://www.instagram.com/chowntown2025" class="social-link" target="_blank">Instagram</a>
-          <a href="https://www.youtube.com/@ChownTown-25" class="social-link" target="_blank">YouTube</a>
-          <a href="https://www.tiktok.com/@chowntown25" class="social-link" target="_blank">TikTok</a>
-        </div>
+    <div class="footer-bottom">
+      <div class="footer-left">
+        <p>© Chowntown 2025</p>
       </div>
-    </footer>
+      <div class="footer-right">
+        <a href="https://www.instagram.com/chowntown2025" class="social-link" target="_blank" rel="noopener">Instagram</a>
+        <a href="https://www.youtube.com/@ChownTown-25" class="social-link" target="_blank" rel="noopener">YouTube</a>
+        <a href="https://www.tiktok.com/@chowntown25" class="social-link" target="_blank" rel="noopener">TikTok</a>
+      </div>
+    </div>
+  </footer>
 
-<!-- ================= SCRIPTS ================= -->
-<script
-  src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
-  integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
-  crossorigin="anonymous"
-></script>
+  <!-- SCRIPTS -->
+  <script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+    crossorigin="anonymous"
+  ></script>
 
-<script
-  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-  crossorigin=""
-></script>
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
 
-<script src="data-level3.js"></script>
-<script src="app.js"></script>
+  <!-- IMPORTANT: data-level3.js must load before app.js -->
+  <script src="data-level3.js"></script>
+  <script src="app.js"></script>
 
 </body>
 </html>
-
-
