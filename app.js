@@ -1,12 +1,3 @@
-// app.js
-// Clean UI behavior:
-// - Directions hidden by default
-// - Directions shown only after successful Route
-// - Clear hides directions + clears route
-// - Search suggestions for rooms + washrooms (washrooms always searchable)
-// - Washroom checkbox ONLY toggles washroom icons on the map (not search)
-// - Uses roomsByBlock as source of truth
-
 document.addEventListener("DOMContentLoaded", () => {
   const data = window.LEVEL3;
   if (!data) {
@@ -14,7 +5,6 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
-  // ---------- Required DOM ----------
   const mapDiv = document.getElementById("chownMap");
   const routeBtn = document.getElementById("routeBtn");
   const clearRouteBtn = document.getElementById("clearRouteBtn");
@@ -25,27 +15,15 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
-  // ---------- Optional DOM ----------
-  const startSearch = document.getElementById("startSearch");
   const endSearch = document.getElementById("endSearch");
-  const startResults = document.getElementById("startResults");
   const endResults = document.getElementById("endResults");
-
   const filterWashroom = document.getElementById("filterWashroom");
-
-  // Admin placement (optional)
-  const modeSelect = document.getElementById("modeSelect"); // route | roomAdd
-  const roomSelect = document.getElementById("roomSelect");
-  const roomCodeInput = document.getElementById("roomCodeInput");
-  const addRoomBtn = document.getElementById("addRoomBtn");
-  const clearRoomsBtn = document.getElementById("clearRoomsBtn");
-  const roomsOut = document.getElementById("roomsOut");
-
-  // Directions wrapper
   const directionsCard = document.getElementById("directionsCard");
   const etaText = document.getElementById("etaText");
 
-  // ---------- Data safety ----------
+  const useLocationBtn = document.getElementById("useLocationBtn");
+  const locationStatus = document.getElementById("locationStatus");
+
   if (!data.image || typeof data.image.width !== "number" || typeof data.image.height !== "number") {
     console.error("LEVEL3.image missing width/height");
     return;
@@ -57,7 +35,6 @@ document.addEventListener("DOMContentLoaded", () => {
   if (!data.roomsByBlock || typeof data.roomsByBlock !== "object") data.roomsByBlock = {};
   if (!Array.isArray(data.pois)) data.pois = [];
 
-  // ---------- Map init ----------
   const map = L.map("chownMap", { crs: L.CRS.Simple, minZoom: -2, maxZoom: 4 });
   const bounds = [[0, 0], [data.image.height, data.image.width]];
   L.imageOverlay(data.image.url, bounds).addTo(map);
@@ -65,8 +42,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const poiLayer = L.layerGroup().addTo(map);
   const routeLayer = L.layerGroup().addTo(map);
+  const userLayer = L.layerGroup().addTo(map);
 
-  // ---------- UI helpers ----------
+  let selectedEnd = null;
+  let userLocation = null; // image x/y
+  let watchId = null;
+  let isTracking = false;
+
   function setSteps(lines) {
     stepsOl.innerHTML = "";
     lines.forEach((t) => {
@@ -86,17 +68,14 @@ document.addEventListener("DOMContentLoaded", () => {
     setSteps([]);
   }
 
-  // Hide directions by default
   hideDirections();
 
-  // ---------- Math helpers ----------
   function dist(a, b) {
     const dx = a.x - b.x;
     const dy = a.y - b.y;
     return Math.sqrt(dx * dx + dy * dy);
   }
 
-  // ---------- roomsByBlock helpers ----------
   function getAllRooms() {
     const out = [];
     for (const blockKey of Object.keys(data.roomsByBlock)) {
@@ -107,94 +86,6 @@ document.addEventListener("DOMContentLoaded", () => {
     return out;
   }
 
-  function findRoomInBlocks(code) {
-    for (const blockKey of Object.keys(data.roomsByBlock)) {
-      const arr = data.roomsByBlock[blockKey] || [];
-      for (const r of arr) {
-        if (r.code === code) return { blockKey, roomObj: r };
-      }
-    }
-    return null;
-  }
-
-  function renderRoomsJSON() {
-    if (!roomsOut) return;
-    roomsOut.textContent = JSON.stringify(data.roomsByBlock, null, 2);
-  }
-
-  function refreshRoomSelectOptions() {
-    if (!roomSelect) return;
-    const current = roomSelect.value;
-    roomSelect.innerHTML = "";
-    getAllRooms().forEach(r => roomSelect.add(new Option(r.code, r.code)));
-    if (current) roomSelect.value = current;
-  }
-
-  refreshRoomSelectOptions();
-  renderRoomsJSON();
-
-  // ---------- Optional: Add room codes by typing (supports 304A etc.) ----------
-  function normalizeRoomCode(code) {
-    const raw = (code || "").toUpperCase().replace(/\s+/g, "").trim();
-    if (raw.length < 6) return null;
-
-    const prefix = raw.slice(0, 3); // MCA/MCB/MCC
-    const rest = raw.slice(3);      // 304 or 304A
-
-    if (!/^[A-Z]{3}$/.test(prefix)) return null;
-    if (!/^\d{3}[A-Z]?$/.test(rest)) return null;
-
-    return `${prefix} ${rest}`;
-  }
-
-  function inferBlockFromCode(code) {
-    // MCA -> A, MCB -> B, MCC -> C ...
-    return code.slice(2, 3);
-  }
-
-  addRoomBtn?.addEventListener("click", () => {
-    const norm = normalizeRoomCode(roomCodeInput?.value);
-    if (!norm) return alert("Invalid code. Example: MCB 304A");
-
-    if (getAllRooms().some(r => r.code === norm)) return alert(`${norm} already exists.`);
-
-    const block = inferBlockFromCode(norm);
-    if (!data.roomsByBlock[block]) data.roomsByBlock[block] = [];
-    data.roomsByBlock[block].push({ code: norm, x: null, y: null });
-
-    if (roomCodeInput) roomCodeInput.value = "";
-    refreshRoomSelectOptions();
-    renderRoomsJSON();
-    if (roomSelect) roomSelect.value = norm;
-  });
-
-  roomCodeInput?.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") addRoomBtn?.click();
-  });
-
-  clearRoomsBtn?.addEventListener("click", () => {
-    for (const blockKey of Object.keys(data.roomsByBlock)) {
-      (data.roomsByBlock[blockKey] || []).forEach(r => { r.x = null; r.y = null; });
-    }
-    renderRoomsJSON();
-  });
-
-  // Click-place coordinates (only if admin mode exists)
-  map.on("click", (e) => {
-    if (!modeSelect || modeSelect.value !== "roomAdd") return;
-    const code = roomSelect?.value;
-    if (!code) return;
-
-    const found = findRoomInBlocks(code);
-    if (!found) return;
-
-    found.roomObj.x = Math.round(e.latlng.lng);
-    found.roomObj.y = Math.round(e.latlng.lat);
-
-    renderRoomsJSON();
-  });
-
-  // ---------- POIs: washroom visibility ----------
   function drawWashrooms() {
     poiLayer.clearLayers();
     if (!filterWashroom?.checked) return;
@@ -215,13 +106,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   filterWashroom?.addEventListener("change", () => {
     drawWashrooms();
-    if (startResults) startResults.innerHTML = "";
     if (endResults) endResults.innerHTML = "";
   });
 
   drawWashrooms();
 
-  // ---------- Search (rooms + washrooms always searchable) ----------
   function normalizeQuery(s) {
     return (s || "").toUpperCase().trim();
   }
@@ -229,10 +118,12 @@ document.addEventListener("DOMContentLoaded", () => {
   function getSearchItems() {
     const items = [];
 
-    // rooms
-    getAllRooms().forEach(r => items.push({ kind: "room", code: r.code, ref: r }));
+    getAllRooms().forEach(r => {
+      if (typeof r.x === "number" && typeof r.y === "number") {
+        items.push({ kind: "room", code: r.code, ref: r });
+      }
+    });
 
-    // washrooms ALWAYS searchable
     data.pois
       .filter(p => p && p.type === "washroom" && typeof p.x === "number" && typeof p.y === "number")
       .forEach(p => items.push({ kind: "poi", code: p.label, ref: p }));
@@ -261,35 +152,17 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  let selectedStart = null;
-  let selectedEnd = null;
-
-  function pickStart(item) {
-    selectedStart = item;
-    if (startSearch) startSearch.value = item.code;
-    if (startResults) startResults.innerHTML = "";
-  }
-
   function pickEnd(item) {
     selectedEnd = item;
     if (endSearch) endSearch.value = item.code;
     if (endResults) endResults.innerHTML = "";
+    if (userLocation) {
+      routeItems(userLocation, selectedEnd);
+    }
   }
-
-  startSearch?.addEventListener("input", () => {
-    renderResults(startResults, doSearch(startSearch.value), pickStart);
-  });
 
   endSearch?.addEventListener("input", () => {
     renderResults(endResults, doSearch(endSearch.value), pickEnd);
-  });
-
-  // Exact match on Enter (so you don't have to click suggestions)
-  startSearch?.addEventListener("keydown", (e) => {
-    if (e.key !== "Enter") return;
-    const typed = startSearch.value.trim();
-    const exact = getSearchItems().find(it => it.code === typed);
-    if (exact) pickStart(exact);
   });
 
   endSearch?.addEventListener("keydown", (e) => {
@@ -299,11 +172,54 @@ document.addEventListener("DOMContentLoaded", () => {
     if (exact) pickEnd(exact);
   });
 
-  // ---------- Routing core (snap to edge + dijkstra) ----------
-  function clearRoute() {
-    routeLayer.clearLayers();
-    map.fitBounds(bounds);
-    hideDirections();
+  function drawUserDot(point) {
+    userLayer.clearLayers();
+
+    L.circleMarker([point.y, point.x], {
+      radius: 10,
+      color: "#ffffff",
+      weight: 3,
+      fillColor: "#1e88ff",
+      fillOpacity: 1
+    }).addTo(userLayer).bindPopup("<b>Your Location</b>");
+
+    L.circleMarker([point.y, point.x], {
+      radius: 18,
+      color: "#1e88ff",
+      weight: 1,
+      fillColor: "#1e88ff",
+      fillOpacity: 0.18
+    }).addTo(userLayer);
+  }
+
+  function gpsToImageXY(lat, lng) {
+    const cal = data.gpsCalibration;
+    if (!cal || !cal.enabled || !cal.topLeft || !cal.bottomRight) return null;
+
+    const latMax = cal.topLeft.lat;
+    const latMin = cal.bottomRight.lat;
+    const lngMin = cal.topLeft.lng;
+    const lngMax = cal.bottomRight.lng;
+
+    if (
+      typeof latMax !== "number" ||
+      typeof latMin !== "number" ||
+      typeof lngMin !== "number" ||
+      typeof lngMax !== "number"
+    ) {
+      return null;
+    }
+
+    const xRatio = (lng - lngMin) / (lngMax - lngMin);
+    const yRatio = (latMax - lat) / (latMax - latMin);
+
+    const x = xRatio * data.image.width;
+    const y = yRatio * data.image.height;
+
+    return {
+      x: Math.max(0, Math.min(data.image.width, x)),
+      y: Math.max(0, Math.min(data.image.height, y))
+    };
   }
 
   function getPointFromItem(item) {
@@ -320,7 +236,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const ab2 = ABx * ABx + ABy * ABy;
     if (ab2 === 0) {
       const dx = P.x - A.x, dy = P.y - A.y;
-      return { x: A.x, y: A.y, dist2: dx*dx + dy*dy };
+      return { x: A.x, y: A.y, dist2: dx * dx + dy * dy };
     }
 
     let t = (APx * ABx + APy * ABy) / ab2;
@@ -330,7 +246,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const y = A.y + t * ABy;
 
     const dx = P.x - x, dy = P.y - y;
-    return { x, y, dist2: dx*dx + dy*dy };
+    return { x, y, dist2: dx * dx + dy * dy };
   }
 
   function snapPointToHallwayEdge(hallway, point) {
@@ -360,8 +276,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const { u, v, proj } = snap;
     working.nodes[entryId] = { x: proj.x, y: proj.y };
 
-    working.edges = working.edges.filter(([a,b]) =>
-      !((a===u && b===v) || (a===v && b===u))
+    working.edges = working.edges.filter(([a, b]) =>
+      !((a === u && b === v) || (a === v && b === u))
     );
 
     working.edges.push([u, entryId]);
@@ -372,7 +288,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function buildAdjFor(h) {
     const adj = {};
     Object.keys(h.nodes).forEach(k => (adj[k] = []));
-    h.edges.forEach(([u,v]) => {
+    h.edges.forEach(([u, v]) => {
       const w = dist(h.nodes[u], h.nodes[v]);
       adj[u].push({ to: v, w });
       adj[v].push({ to: u, w });
@@ -420,11 +336,13 @@ document.addEventListener("DOMContentLoaded", () => {
     return path;
   }
 
-  // ---------- Directions (ETA + left/right) ----------
   function simplifyPoints(points, minSegmentPx = 18) {
     const out = [];
     for (const p of points) {
-      if (out.length === 0) { out.push(p); continue; }
+      if (out.length === 0) {
+        out.push(p);
+        continue;
+      }
       const last = out[out.length - 1];
       if (Math.hypot(p.x - last.x, p.y - last.y) >= minSegmentPx) out.push(p);
     }
@@ -448,7 +366,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function routeDistancePx(points) {
     let d = 0;
     for (let i = 1; i < points.length; i++) {
-      d += Math.hypot(points[i].x - points[i-1].x, points[i].y - points[i-1].y);
+      d += Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
     }
     return d;
   }
@@ -463,7 +381,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function buildTurnByTurn(hallwayPoints, startLabel, endLabel) {
     const pts = simplifyPoints(hallwayPoints);
-
     const px = routeDistancePx(pts);
     const { meters, minutes } = computeETA(px);
 
@@ -488,20 +405,20 @@ document.addEventListener("DOMContentLoaded", () => {
     return steps;
   }
 
-  function routeItems(startItem, endItem) {
+  function routeItems(startPoint, endItem) {
     routeLayer.clearLayers();
 
-    if (!startItem || !endItem) {
+    if (!startPoint || !endItem) {
       hideDirections();
-      return alert("Select Start and End from suggestions (or press Enter for exact match).");
+      return;
     }
 
-    const A = getPointFromItem(startItem);
+    const A = startPoint;
     const B = getPointFromItem(endItem);
 
     if (!A || !B) {
       hideDirections();
-      return alert("Missing coordinates for Start/End. Click-place missing rooms or add POI coords.");
+      return;
     }
 
     const working = cloneHallway(data.hallway);
@@ -510,13 +427,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!sId || !eId) {
       hideDirections();
-      return alert("Could not snap to hallways. Add more hallway edges near these rooms.");
+      return;
     }
 
     const hallwayPath = dijkstraFor(working, sId, eId);
     if (!hallwayPath.length) {
       hideDirections();
-      return alert("No connected hallway path found (graph disconnected).");
+      return;
     }
 
     const coords = [
@@ -528,23 +445,124 @@ document.addEventListener("DOMContentLoaded", () => {
       [B.y, B.x]
     ];
 
-    const mainLine = L.polyline(coords, { weight: 8, opacity: 0.9 }).addTo(routeLayer);
+    const mainLine = L.polyline(coords, {
+      weight: 8,
+      opacity: 0.9
+    }).addTo(routeLayer);
 
-    // dashed connectors
     const sPt = working.nodes[sId];
     const ePt = working.nodes[eId];
-    L.polyline([[A.y, A.x], [sPt.y, sPt.x]], { dashArray: "6 8", weight: 4, opacity: 0.85 }).addTo(routeLayer);
-    L.polyline([[B.y, B.x], [ePt.y, ePt.x]], { dashArray: "6 8", weight: 4, opacity: 0.85 }).addTo(routeLayer);
 
-    map.fitBounds(mainLine.getBounds(), { padding: [40, 40] });
+    L.polyline([[A.y, A.x], [sPt.y, sPt.x]], {
+      dashArray: "6 8",
+      weight: 4,
+      opacity: 0.85
+    }).addTo(routeLayer);
+
+    L.polyline([[B.y, B.x], [ePt.y, ePt.x]], {
+      dashArray: "6 8",
+      weight: 4,
+      opacity: 0.85
+    }).addTo(routeLayer);
 
     const hallwayPoints = hallwayPath.map(id => working.nodes[id]);
-    const steps = buildTurnByTurn(hallwayPoints, startItem.code, endItem.code);
+    const steps = buildTurnByTurn(hallwayPoints, "Your Location", endItem.code);
     setSteps(steps);
     showDirections();
+
+    if (mainLine.getBounds().isValid()) {
+      map.fitBounds(mainLine.getBounds(), { padding: [40, 40] });
+    }
   }
 
-  // Buttons
-  routeBtn.addEventListener("click", () => routeItems(selectedStart, selectedEnd));
+  function updateLocationFromGPS(position) {
+    const lat = position.coords.latitude;
+    const lng = position.coords.longitude;
+    const accuracy = position.coords.accuracy;
+
+    const mapped = gpsToImageXY(lat, lng);
+    if (!mapped) {
+      if (locationStatus) {
+        locationStatus.textContent = "GPS received, but map calibration is missing.";
+      }
+      return;
+    }
+
+    userLocation = mapped;
+    drawUserDot(userLocation);
+
+    if (locationStatus) {
+      locationStatus.textContent =
+        `Tracking live • lat ${lat.toFixed(6)}, lng ${lng.toFixed(6)} • ±${Math.round(accuracy)}m`;
+    }
+
+    if (selectedEnd) {
+      routeItems(userLocation, selectedEnd);
+    }
+  }
+
+  function handleLocationError(error) {
+    let msg = "Location error.";
+    switch (error.code) {
+      case error.PERMISSION_DENIED:
+        msg = "Location permission denied.";
+        break;
+      case error.POSITION_UNAVAILABLE:
+        msg = "Location unavailable.";
+        break;
+      case error.TIMEOUT:
+        msg = "Location request timed out.";
+        break;
+    }
+    if (locationStatus) locationStatus.textContent = msg;
+  }
+
+  function startTracking() {
+    if (!navigator.geolocation) {
+      if (locationStatus) locationStatus.textContent = "Geolocation is not supported on this device.";
+      return;
+    }
+
+    if (watchId !== null) {
+      navigator.geolocation.clearWatch(watchId);
+      watchId = null;
+    }
+
+    watchId = navigator.geolocation.watchPosition(
+      updateLocationFromGPS,
+      handleLocationError,
+      {
+        enableHighAccuracy: true,
+        maximumAge: 1000,
+        timeout: 10000
+      }
+    );
+
+    isTracking = true;
+    if (locationStatus) {
+      locationStatus.textContent = "Starting live GPS tracking...";
+    }
+  }
+
+  function clearRoute() {
+    routeLayer.clearLayers();
+    userLayer.clearLayers();
+    userLocation = null;
+    hideDirections();
+    map.fitBounds(bounds);
+
+    if (watchId !== null) {
+      navigator.geolocation.clearWatch(watchId);
+      watchId = null;
+    }
+
+    isTracking = false;
+    if (locationStatus) {
+      locationStatus.textContent = "Tracking stopped.";
+    }
+  }
+
+  useLocationBtn?.addEventListener("click", startTracking);
+  routeBtn.addEventListener("click", () => routeItems(userLocation, selectedEnd));
   clearRouteBtn.addEventListener("click", clearRoute);
 });

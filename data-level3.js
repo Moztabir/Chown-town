@@ -169,5 +169,21 @@ window.LEVEL3 = {
     metersPerPixel: 0.03,
     walkingSpeedMps: 1.3
   }
+
+  ,
+gpsCalibration: {
+  enabled: true,
+
+  // Approximate top-left and bottom-right GPS bounds of your mapped area
+  // Replace these with real coordinates from outside/around the building
+  topLeft: {
+    lat: 43.1179,
+    lng: -79.2478
+  },
+  bottomRight: {
+    lat: 43.1172,
+    lng: -79.2466
+  }
+}
 };
 
