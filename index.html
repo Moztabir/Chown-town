@@ -29,6 +29,7 @@
 
   <!-- Your CSS -->
   <link rel="stylesheet" href="style.css" />
+</head>
 <body>
 
   <!-- HEADER -->
@@ -85,69 +86,66 @@
 
   <!-- MAIN -->
   <main class="container py-4">
-  <h2 class="mb-3">ChownTown Map (Level 3)</h2>
+    <h2 class="mb-3">ChownTown Map (Level 3)</h2>
 
-  <!-- Top bar -->
-  <div class="topbar card shadow-sm mb-3">
-    <div class="card-body">
-      <div class="row g-2 align-items-end">
+    <!-- Top bar -->
+    <div class="topbar card shadow-sm mb-3">
+      <div class="card-body">
+        <div class="row g-2 align-items-end">
 
-        <div class="col-12 col-md-4">
-  <label class="small text-muted mb-1">Start</label>
-  <div class="d-flex gap-2">
-    <button id="useLocationBtn" class="btn btn-sm btn-primary w-100">
-      <i class="bi bi-geo-alt-fill me-1"></i>Use Live Location
-    </button>
-  </div>
-  <div class="small text-muted mt-1" id="locationStatus">
-    Press the button to start live phone tracking.
-  </div>
-</div>
-
-        <div class="col-12 col-md-4">
-          <label class="small text-muted mb-1">End</label>
-          <input id="endSearch" class="form-control form-control-sm" placeholder="Search e.g. MCB 320">
-          <div id="endResults" class="list-group mt-1"></div>
-        </div>
-
-        <div class="col-12 col-md-4">
-          <label class="small text-muted mb-1">Actions</label>
-          <div class="d-flex gap-2">
-            <button id="routeBtn" class="btn btn-sm btn-dark w-50">Route</button>
-            <button id="clearRouteBtn" class="btn btn-sm btn-outline-dark w-50">Clear</button>
+          <!-- START -->
+          <div class="col-12 col-md-4 position-relative">
+            <label class="small text-muted mb-1">Start</label>
+            <input id="startSearch" class="form-control form-control-sm" placeholder="Search e.g. MCB 311">
+            <div id="startResults" class="list-group mt-1"></div>
           </div>
 
-          <div class="d-flex align-items-center gap-3 mt-2 flex-wrap">
-            <strong class="small">Filters:</strong>
-            <label class="form-check-label d-flex align-items-center gap-2 small">
-              <input id="filterWashroom" class="form-check-input" type="checkbox">
-              Washroom
-            </label>
+          <!-- END -->
+          <div class="col-12 col-md-4 position-relative">
+            <label class="small text-muted mb-1">End</label>
+            <input id="endSearch" class="form-control form-control-sm" placeholder="Search e.g. MCB 320">
+            <div id="endResults" class="list-group mt-1"></div>
           </div>
+
+          <!-- ACTIONS -->
+          <div class="col-12 col-md-4">
+            <label class="small text-muted mb-1">Actions</label>
+            <div class="d-flex gap-2">
+              <button id="routeBtn" class="btn btn-sm btn-dark w-50">Route</button>
+              <button id="clearRouteBtn" class="btn btn-sm btn-outline-dark w-50">Clear</button>
+            </div>
+
+            <div class="d-flex align-items-center gap-3 mt-2 flex-wrap">
+              <strong class="small">Filters:</strong>
+              <label class="form-check-label d-flex align-items-center gap-2 small">
+                <input id="filterWashroom" class="form-check-input" type="checkbox">
+                Washroom
+              </label>
+            </div>
+          </div>
+
         </div>
-
       </div>
     </div>
-  </div>
 
-  <!-- Map -->
-  <div class="mapShell card shadow-sm mb-3">
-    <div class="card-body p-2">
-      <div id="chownMap"></div>
-    </div>
-  </div>
-
-  <!-- Directions (hidden until Route) -->
-  <div id="directionsCard" class="card shadow-sm d-none">
-    <div class="card-body">
-      <div class="d-flex justify-content-between align-items-center">
-        <h5 class="mb-2">Directions</h5>
-        <span id="etaText" class="text-muted small"></span>
+    <!-- Map -->
+    <div class="mapShell card shadow-sm mb-3">
+      <div class="card-body p-2">
+        <div id="chownMap"></div>
       </div>
-      <ol id="steps" class="mb-0"></ol>
     </div>
-  </div>
-</main>
+
+    <!-- Directions -->
+    <div id="directionsCard" class="card shadow-sm d-none">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <h5 class="mb-2">Directions</h5>
+          <span id="etaText" class="text-muted small"></span>
+        </div>
+        <ol id="steps" class="mb-0"></ol>
+      </div>
+    </div>
+  </main>
 
   <!-- FOOTER -->
   <footer class="mt-4">
@@ -157,6 +155,7 @@
         <li><a href="terms_of_service.html">Terms of Service</a></li>
       </ul>
     </nav>
+  </footer>
 
   <!-- SCRIPTS -->
   <script
